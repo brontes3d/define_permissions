@@ -1,0 +1,68 @@
+= Define Permissions
+
+Way to define and enforce permissions on a variety of levels.  Best used in conjunction with define_my_users, but not required.
+
+== This Plugin has 5 components:
+* 1 for permission definition (DefinePermissions::Definition)
+* 3 for permission enforcement (ProtectedModel, ProtectedController, ProtectFields)
+* 1 to connect definition with enforcement (AuthorizedActor)
+
+=== Those components are:
+DefinePermissions::Definition:: stands alone.
+::: Provides basis for the definition of different sets of permissions. 
+AuthorizedActor::  builds on DefinePermissions::Definition.
+::: Provides basis for the uniform definition of which things in our app are like 'users' and thus have to have permissions defined for them. (and on whom permission to 'act' should be checked)
+ProtectedModel:: builds on DefinePermissions::Definition and AuthorizedActor.
+::: Provides ability to restrict the changes that can be made during a create or update on a model. Also allows scoping of ActiveRecord finds.
+ProtectedController:: builds on DefinePermissions::Definition and AuthorizedActor and requires the definition of current_object (as provided by make_resourceful).
+::: Provides before_filters on controller actions to check if the current actor is permitted to perform that action
+ProtectFields:: builds on DefinePermissions::Definition and AuthorizedActor and the FieldHelper plugin
+::: Leverages the FieldHelper plugin to influence wether certain form fields and display fields should be shown, and how, for the current actor
+
+=== The Basics: DefinePermissions::Definition
+
+DefinePermissions::Definition provides a DSL for the definition of a variety of permissions, as well as simple calls for retrieving a true, false or DefinePermissions::PermissionNoDefined exception as a result of a permissions check.
+
+All permissions checks involve an 'actor' (something that includes DefinePermissions::Actor), which must define self.permissions to return a module representative of that actors permissions. (that module must include DefinePermissions::Definition)
+
+
+==== Example
+
+Assuming definition of voter as an actor:
+	class Voter < ActiveRecord::Base 
+
+	  include DefinePermissions::Actor
+
+	  def permissions
+	    VoterPermissions
+	  end
+
+	end
+
+Suppose :vote is an action that the voter may or may not be allowed to perform on Election.
+
+	module VoterPermissions
+	  include DefinePermissions::Definition
+    
+	  permitted_actions_on(ElectionsController) do 
+	     permit(:vote)
+	     deny(:all)
+	  end
+	end
+
+You can check this permission by calling:
+
+	voter.permitted(:vote, Election)
+
+In this case the call would return 'true' because of the <tt>permit(:vote)</tt> declaration in VoterPermissions.
+
+The DefinePermissions::Definition documentation goes into more depth on the available declarations, and how they can be retrieved.
+
+<b>next Chapter</b>:: AuthorizedActor.
+
+
+
+
+Copyright (c) 2008-2010 3M. All rights reserved. Released under the MIT license.
+
+Authored by Jacob Burkhart.
